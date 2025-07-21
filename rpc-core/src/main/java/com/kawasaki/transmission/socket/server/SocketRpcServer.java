@@ -7,6 +7,7 @@ import com.kawasaki.handler.RpcReqHandler;
 import com.kawasaki.provider.ServiceProvider;
 import com.kawasaki.provider.impl.SimpleServiceProvider;
 import com.kawasaki.transmission.RpcServer;
+import com.kawasaki.util.ThreadPoolUtils;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,6 +16,7 @@ import java.io.ObjectOutputStream;
 import java.lang.reflect.Method;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.ExecutorService;
 
 // only handles request and response
 @Slf4j
@@ -22,6 +24,7 @@ public class SocketRpcServer implements RpcServer {
     private final int port;
     private final RpcReqHandler rpcReqHandler;
     private final ServiceProvider serviceProvider;
+    private final ExecutorService executor;
 
     public SocketRpcServer(int port) {
         this(port, new SimpleServiceProvider());
@@ -31,6 +34,7 @@ public class SocketRpcServer implements RpcServer {
         this.port = port;
         this.serviceProvider = serviceProvider;
         this.rpcReqHandler = new RpcReqHandler(serviceProvider);
+        this.executor = ThreadPoolUtils.createIOIntensiveThreadPool("socket-rpc-server-");
     }
 
     public void start() {
@@ -39,19 +43,8 @@ public class SocketRpcServer implements RpcServer {
 
             Socket socket;
             while((socket = serverSocket.accept()) != null) {
-                ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
-                Object o = objectInputStream.readObject();
-                RpcReq rpcReq = (RpcReq) o;
-
-                System.out.println(rpcReq);
-
-                // Call method specified by the rpc request
-                Object data = rpcReqHandler.invoke(rpcReq);
-
-                RpcResp<?> rpcResp = RpcResp.success(rpcReq.getReqId(), data);
-                ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
-                objectOutputStream.writeObject(rpcResp);
-                objectOutputStream.flush();
+                // everytime server receives a req from socket, start executing with thread pool
+                executor.submit(new SocketReqHandler(socket, rpcReqHandler));
             }
         } catch (Exception e) {
             log.error("Server exception", e);

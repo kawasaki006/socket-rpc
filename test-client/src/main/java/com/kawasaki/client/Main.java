@@ -4,6 +4,10 @@ import com.kawasaki.dto.RpcReq;
 import com.kawasaki.dto.RpcResp;
 import com.kawasaki.transmission.RpcClient;
 import com.kawasaki.transmission.socket.client.SocketRpcClient;
+import com.kawasaki.util.ThreadPoolUtils;
+
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 public class Main {
     public static void main(String[] args) {
@@ -17,7 +21,12 @@ public class Main {
                 .paramTypes(new Class[]{Long.class})
                 .build();
 
-        RpcResp<?> testResp = rpcClient.sendReq(testReq);
-        System.out.println(testResp.getData());
+        ExecutorService executor = ThreadPoolUtils.createIOIntensiveThreadPool("test");
+        for (int i = 0; i < 100; i++) {
+            executor.submit(() -> {
+                RpcResp<?> testResp = rpcClient.sendReq(testReq);
+                System.out.println(testResp.getData());
+            });
+        }
     }
 }
