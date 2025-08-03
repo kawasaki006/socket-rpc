@@ -2,21 +2,34 @@ package com.kawasaki.registry.zk;
 
 import cn.hutool.core.util.StrUtil;
 import com.kawasaki.constant.RpcConstant;
+import com.kawasaki.util.IpUtils;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.recipes.cache.PathChildrenCache;
+import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.CreateMode;
 
+import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class ZkClient {
     private static final int BASE_SLEEP_TIME = 1000;
     private static final int MAX_RECIPES = 3;
-    private CuratorFramework client;
+    private final CuratorFramework client;
+
+    // service address cache
+    private static final Map<String, List<String>> SERVICE_ADDRESS_CACHE = new ConcurrentHashMap<>();
+    // stores full path to address
+    private static final Set<String> SERVICE_ADDRESS_SET = ConcurrentHashMap.newKeySet();
 
     public ZkClient() {
         this(RpcConstant.ZK_IP, RpcConstant.ZK_PORT);
@@ -42,7 +55,13 @@ public class ZkClient {
             throw new IllegalArgumentException("path is null!");
         }
 
+        if (SERVICE_ADDRESS_SET.contains(path)) {
+            log.info("path node exists!");
+            return;
+        }
+
         if (client.checkExists().forPath(path) != null) {
+            SERVICE_ADDRESS_SET.add(path);
             log.info("path exists!");
             return;
         }
@@ -52,6 +71,8 @@ public class ZkClient {
                 .creatingParentsIfNeeded()
                 .withMode(CreateMode.PERSISTENT)
                 .forPath(path);
+
+        SERVICE_ADDRESS_SET.add(path);
     }
 
     @SneakyThrows
@@ -60,6 +81,47 @@ public class ZkClient {
             throw new IllegalArgumentException("path is null!");
         }
 
-        return client.getChildren().forPath(path);
+        if (SERVICE_ADDRESS_CACHE.containsKey(path)) {
+            return SERVICE_ADDRESS_CACHE.get(path);
+        }
+
+        List<String> children = client.getChildren().forPath(path);
+        SERVICE_ADDRESS_CACHE.put(path, children);
+
+        watchNode(path);
+
+        return children;
+    }
+
+    // clear nodes on zk server when a server is down (address: address of the closing server)
+    public void clearAll(InetSocketAddress address) {
+        if (Objects.isNull(address)) {
+            throw new IllegalArgumentException("address cannot be null!");
+        }
+
+        SERVICE_ADDRESS_SET.forEach(path -> {
+            if (path.endsWith(IpUtils.ToIpPort(address))) {
+                log.debug("zk deleting node: {}", path);
+                try {
+                    client.delete().deletingChildrenIfNeeded().forPath(path);
+                } catch (Exception e) {
+                    log.error("failed to delete zk node!");
+                }
+            }
+        });
+    }
+
+    // watch for any changes in a path
+    @SneakyThrows
+    private void watchNode(String path) {
+        PathChildrenCache pathChildrenCache = new PathChildrenCache(client, path, true);
+
+        PathChildrenCacheListener listener = (curClient, event) -> {
+            List<String> children = curClient.getChildren().forPath(path);
+            SERVICE_ADDRESS_CACHE.put(path, children);
+        };
+
+        pathChildrenCache.getListenable().addListener(listener);
+        pathChildrenCache.start();
     }
 }

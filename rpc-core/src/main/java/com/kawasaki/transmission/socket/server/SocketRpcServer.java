@@ -10,6 +10,7 @@ import com.kawasaki.provider.ServiceProvider;
 import com.kawasaki.provider.impl.SimpleServiceProvider;
 import com.kawasaki.provider.impl.ZkServiceProvider;
 import com.kawasaki.transmission.RpcServer;
+import com.kawasaki.util.ShutdownHookUtils;
 import com.kawasaki.util.ThreadPoolUtils;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +44,9 @@ public class SocketRpcServer implements RpcServer {
     }
 
     public void start() {
+        // init shut down hook
+        ShutdownHookUtils.clearAll();
+
         try (ServerSocket serverSocket = new ServerSocket(this.port)) {
             log.info("Server started on port {}", this.port);
 

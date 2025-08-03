@@ -6,8 +6,10 @@ import com.kawasaki.factory.SingletonFactory;
 import com.kawasaki.registry.ServiceRegistry;
 import com.kawasaki.registry.zk.ZkClient;
 import com.kawasaki.util.IpUtils;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 @Slf4j
@@ -35,5 +37,13 @@ public class ZkServiceRegistry implements ServiceRegistry {
         zkClient.createPersistentNode(path);
 
         log.info("Service register at {}!", path);
+    }
+
+    @SneakyThrows
+    @Override
+    public void clearAll() {
+        String host = InetAddress.getLocalHost().getHostAddress();
+        int port = RpcConstant.SERVER_PORT;
+        zkClient.clearAll(new InetSocketAddress(host, port));
     }
 }
