@@ -23,9 +23,9 @@ public class RpcReq implements Serializable {
     private String version;
     private String group;
 
-    public String rpcReqName() {
+    public String rpcServiceName() {
         return getInterfaceName()
                 + StrUtil.blankToDefault(getVersion(), StrUtil.EMPTY)
-                + StrUtil.blankToDefault(getVersion(), StrUtil.EMPTY);
+                + StrUtil.blankToDefault(getGroup(), StrUtil.EMPTY);
     }
 }

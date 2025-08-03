@@ -2,25 +2,33 @@ package com.kawasaki.transmission.socket.client;
 
 import com.kawasaki.dto.RpcReq;
 import com.kawasaki.dto.RpcResp;
+import com.kawasaki.factory.SingletonFactory;
+import com.kawasaki.registry.ServiceDiscovery;
+import com.kawasaki.registry.impl.ZkServiceDiscovery;
 import com.kawasaki.transmission.RpcClient;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 
 @Slf4j
 public class SocketRpcClient implements RpcClient {
-    private final String host;
-    private final int port;
+    private final ServiceDiscovery serviceDiscovery;
 
-    public SocketRpcClient(String host, int port) {
-        this.host = host;
-        this.port = port;
+    public SocketRpcClient() {
+        this(SingletonFactory.getInstance(ZkServiceDiscovery.class));
+    }
+
+    public SocketRpcClient(ServiceDiscovery serviceDiscovery) {
+        this.serviceDiscovery = serviceDiscovery;
     }
 
     public RpcResp<?> sendReq(RpcReq rpcReq) {
-        try (Socket socket = new Socket(this.host, this.port)) {
+        InetSocketAddress address = serviceDiscovery.findService(rpcReq);
+
+        try (Socket socket = new Socket(address.getAddress(), address.getPort())) {
             ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
             outputStream.writeObject(rpcReq);
             outputStream.flush();

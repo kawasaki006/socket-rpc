@@ -18,7 +18,7 @@ public class RpcReqHandler {
     @SneakyThrows
     public Object invoke(RpcReq rpcReq) {
         // get service from provider
-        String serviceName = rpcReq.rpcReqName();
+        String serviceName = rpcReq.rpcServiceName();
         Object service = serviceProvider.retrieveService(serviceName);
 
         log.debug("Retrieved service: {}", service.getClass().getCanonicalName());

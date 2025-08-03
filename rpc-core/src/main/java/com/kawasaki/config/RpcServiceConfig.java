@@ -5,6 +5,7 @@ package com.kawasaki.config;
 import cn.hutool.core.util.StrUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Arrays;
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.stream.Collectors;
 
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class RpcServiceConfig {
     private Object service;
     private String version = "";

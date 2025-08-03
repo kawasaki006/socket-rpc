@@ -1,11 +1,14 @@
 package com.kawasaki.transmission.socket.server;
 
 import com.kawasaki.config.RpcServiceConfig;
+import com.kawasaki.constant.RpcConstant;
 import com.kawasaki.dto.RpcReq;
 import com.kawasaki.dto.RpcResp;
+import com.kawasaki.factory.SingletonFactory;
 import com.kawasaki.handler.RpcReqHandler;
 import com.kawasaki.provider.ServiceProvider;
 import com.kawasaki.provider.impl.SimpleServiceProvider;
+import com.kawasaki.provider.impl.ZkServiceProvider;
 import com.kawasaki.transmission.RpcServer;
 import com.kawasaki.util.ThreadPoolUtils;
 import lombok.SneakyThrows;
@@ -26,8 +29,10 @@ public class SocketRpcServer implements RpcServer {
     private final ServiceProvider serviceProvider;
     private final ExecutorService executor;
 
+    public SocketRpcServer() {this(RpcConstant.SERVER_PORT);}
+
     public SocketRpcServer(int port) {
-        this(port, new SimpleServiceProvider());
+        this(port, SingletonFactory.getInstance(ZkServiceProvider.class));
     }
 
     public SocketRpcServer(int port, ServiceProvider serviceProvider) {
