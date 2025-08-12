@@ -9,4 +9,11 @@
 
     <artifactId>test-api</artifactId>
     <packaging>jar</packaging>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.kawasaki</groupId>
+            <artifactId>rpc-core</artifactId>
+        </dependency>
+    </dependencies>
 </project>
