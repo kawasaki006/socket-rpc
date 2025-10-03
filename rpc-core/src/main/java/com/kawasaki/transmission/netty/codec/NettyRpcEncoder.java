@@ -8,6 +8,7 @@ import com.kawasaki.dto.RpcMsg;
 import com.kawasaki.factory.SingletonFactory;
 import com.kawasaki.serialize.Serializer;
 import com.kawasaki.serialize.impl.KryoSerializer;
+import com.kawasaki.spi.CustomLoader;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
@@ -46,7 +47,10 @@ public class NettyRpcEncoder extends MessageToByteEncoder<RpcMsg> {
     }
 
     private byte[] data2Bytes(RpcMsg rpcMsg) {
-        Serializer serializer = SingletonFactory.getInstance(KryoSerializer.class);
+        String serializerTypeStr = rpcMsg.getMsgType().getDescription();
+
+        Serializer serializer = CustomLoader.getLoader(Serializer.class)
+                .get(serializerTypeStr);
         byte[] data = serializer.serialize(rpcMsg.getData());
 
         Compress compress = SingletonFactory.getInstance(GzipCompress.class);

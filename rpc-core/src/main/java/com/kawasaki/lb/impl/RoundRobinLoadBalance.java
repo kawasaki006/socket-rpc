@@ -1,14 +1,18 @@
 package com.kawasaki.lb.impl;
 
-import cn.hutool.core.util.RandomUtil;
 import com.kawasaki.dto.RpcReq;
 import com.kawasaki.lb.LoadBalance;
 
 import java.util.List;
 
-public class RandomLoadBalance implements LoadBalance {
+public class RoundRobinLoadBalance implements LoadBalance {
+    private int last = -1;
+
     @Override
     public String select(List<String> list, RpcReq rpcReq) {
-        return RandomUtil.randomEle(list);
+        last++;
+        last = last % list.size();
+
+        return list.get(last);
     }
 }

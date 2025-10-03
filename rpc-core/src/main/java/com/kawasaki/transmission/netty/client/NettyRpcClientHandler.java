@@ -8,6 +8,7 @@ import com.kawasaki.enums.CompressType;
 import com.kawasaki.enums.MsgType;
 import com.kawasaki.enums.SerializeType;
 import com.kawasaki.enums.VersionType;
+import com.kawasaki.util.ConfigUtils;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -43,10 +44,12 @@ public class NettyRpcClientHandler extends SimpleChannelInboundHandler<RpcMsg> {
             return;
         }
 
+        String serializer = ConfigUtils.getRpcConfig().getSerializer();
+
         // send heartbeat request message
         RpcMsg rpcMsg = RpcMsg.builder()
                 .version(VersionType.VERSION1)
-                .serializeType(SerializeType.KRYO)
+                .serializeType(SerializeType.fromDesc(serializer))
                 .compressType(CompressType.GZIP)
                 .msgType(MsgType.HEARTBEAT_REQ)
                 .build();

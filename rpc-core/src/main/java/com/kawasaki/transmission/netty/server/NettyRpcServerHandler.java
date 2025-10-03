@@ -10,6 +10,8 @@ import com.kawasaki.enums.VersionType;
 import com.kawasaki.factory.SingletonFactory;
 import com.kawasaki.handler.RpcReqHandler;
 import com.kawasaki.provider.ServiceProvider;
+import com.kawasaki.serialize.Serializer;
+import com.kawasaki.util.ConfigUtils;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -41,12 +43,14 @@ public class NettyRpcServerHandler extends SimpleChannelInboundHandler<RpcMsg> {
             data = handleRpcReq(rpcReq);
         }
 
+        String serializer = ConfigUtils.getRpcConfig().getSerializer();
+
         RpcMsg msg = RpcMsg.builder()
                 .reqId(rpcMsg.getReqId())
                 .version(VersionType.VERSION1)
                 .msgType(msgType)
                 .compressType(CompressType.GZIP)
-                .serializeType(SerializeType.KRYO)
+                .serializeType(SerializeType.fromDesc(serializer))
                 .data(data)
                 .build();
 

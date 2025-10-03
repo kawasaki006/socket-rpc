@@ -48,7 +48,7 @@ public class RpcClientProxy implements InvocationHandler {
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-
+        // only handles one method: send rpc request!!!
         RpcReq rpcReq = RpcReq.builder()
                 .reqId(IdUtil.fastSimpleUUID())
                 .interfaceName(method.getDeclaringClass().getCanonicalName())

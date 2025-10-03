@@ -15,6 +15,8 @@ import com.kawasaki.exception.RpcException;
 import com.kawasaki.factory.SingletonFactory;
 import com.kawasaki.serialize.Serializer;
 import com.kawasaki.serialize.impl.KryoSerializer;
+import com.kawasaki.spi.CustomLoader;
+import com.kawasaki.util.ConfigUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
@@ -58,7 +60,8 @@ public class NettyRpcDecoder extends LengthFieldBasedFrameDecoder {
         int reqId = buf.readInt();
 
         // data
-        Object data = readData(buf, msgLen - RpcConstant.REQ_HEAD_LEN, msgType);
+        Object data = readData(buf, msgLen - RpcConstant.REQ_HEAD_LEN, msgType,
+                serializeType);
 
         return RpcMsg.builder()
                 .reqId(reqId)
@@ -79,17 +82,19 @@ public class NettyRpcDecoder extends LengthFieldBasedFrameDecoder {
         }
     }
 
-    private Object readData(ByteBuf buf, int dataLen, MsgType msgType) {
+    private Object readData(ByteBuf buf, int dataLen, MsgType msgType,
+                            SerializeType serializeType) {
         if (msgType.isReq()) {
             // if msg is a request
-            return readData(buf, dataLen, RpcReq.class);
+            return readData(buf, dataLen, RpcReq.class, serializeType);
         } else {
             // if msg is a response
-            return readData(buf, dataLen, RpcResp.class);
+            return readData(buf, dataLen, RpcResp.class, serializeType);
         }
     }
 
-    private <T> T readData(ByteBuf buf, int dataLen, Class<T> clazz) {
+    private <T> T readData(ByteBuf buf, int dataLen, Class<T> clazz,
+                           SerializeType serializeType) {
         if (dataLen <= 0) {
             return null;
         }
@@ -100,7 +105,10 @@ public class NettyRpcDecoder extends LengthFieldBasedFrameDecoder {
         Compress compress = SingletonFactory.getInstance(GzipCompress.class);
         data = compress.decompress(data);
 
-        Serializer serializer = SingletonFactory.getInstance(KryoSerializer.class);
+        String serializerTypeStr = serializeType.getDescription();
+        Serializer serializer = CustomLoader.getLoader(Serializer.class)
+                .get(serializerTypeStr);
+
         return serializer.deserialize(data, clazz);
     }
 }

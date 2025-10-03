@@ -16,6 +16,7 @@ import com.kawasaki.transmission.RpcClient;
 import com.kawasaki.transmission.netty.codec.NettyRpcDecoder;
 import com.kawasaki.transmission.netty.codec.NettyRpcEncoder;
 import com.kawasaki.transmission.netty.server.NettyRpcServer;
+import com.kawasaki.util.ConfigUtils;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -74,16 +75,19 @@ public class NettyRpcClient implements RpcClient {
     @Override
     public Future<RpcResp<?>> sendReq(RpcReq rpcReq) {
         CompletableFuture<RpcResp<?>> cf = new CompletableFuture<>();
+        // save cf for handler later
         UnprocessedRpcReq.put(rpcReq.getReqId(), cf);
-
+        // find a service address
         InetSocketAddress address = serviceDiscovery.findService(rpcReq);
         // blocking, until connected
         Channel channel = channelPool.get(address, () -> connect(address));
         log.info("Netty rpc client connected to: {}", address);
 
+        String serializer = ConfigUtils.getRpcConfig().getSerializer();
+
         RpcMsg rpcMsg = RpcMsg.builder()
                 .version(VersionType.VERSION1)
-                .serializeType(SerializeType.KRYO)
+                .serializeType(SerializeType.fromDesc(serializer))
                 .compressType(CompressType.GZIP)
                 .msgType(MsgType.RPC_REQ)
                 .data(rpcReq)

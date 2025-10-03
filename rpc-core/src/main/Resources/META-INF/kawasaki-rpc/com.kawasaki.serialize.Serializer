@@ -1,0 +1,1 @@
+kryo=com.kawasaki.serialize.impl.KryoSerializer
