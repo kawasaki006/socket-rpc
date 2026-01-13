@@ -32,10 +32,8 @@ The protocol is encoded into a single message container `RpcMsg` and supports:
 - **Length-field framing** to handle TCP fragmentation/coalescing
 
 The Netty decoder extends `LengthFieldBasedFrameDecoder` and then parses fields in order (magic → version → length → msgType → serializer → compress → reqId → data).  
-See `NettyRpcDecoder` for the exact layout and checks. 
 
-The Netty encoder writes magic/version, reserves 4 bytes for length, and backfills message length after writing the payload. :contentReference[oaicite:2]{index=2}
-
+The Netty encoder writes magic/version, reserves 4 bytes for length, and backfills message length after writing the payload.
 ---
 
 ### 2) Transport Layer: Netty Client/Server + Channel Reuse + Heartbeat
@@ -46,8 +44,7 @@ The Netty encoder writes magic/version, reserves 4 bytes for length, and backfil
   - client: send heartbeat if write-idle
   - server: close channel if read-idle for a period
 
-On the client side, each outgoing request is associated with a `CompletableFuture`, stored in a map; the inbound handler completes the future when a response arrives (future correlation).  
-See `UnprocessedRpcReq` for the correlation map. :contentReference[oaicite:3]{index=3}
+On the client side, each outgoing request is associated with a `CompletableFuture`, stored in a map; the inbound handler completes the future when a response arrives.  
 
 ---
 
@@ -73,16 +70,14 @@ Load balancer is abstracted behind `LoadBalance` and includes multiple strategie
 
 The framework includes a minimal SPI mechanism `CustomLoader`:
 - Loads implementations from `META-INF/kawasaki-rpc/<interface-full-name>`
-- Lazily instantiates implementations with caching (double-checked locking via `Holder`)
+- Lazily instantiates implementations with caching
 - Used for pluggable components such as serializers
-
-See `CustomLoader` for the resource path convention and loading logic. :contentReference[oaicite:4]{index=4}
 
 ---
 
 ### 6) Serialization & Compression
 
-Pluggable serializers (examples in repo):
+Pluggable serializers:
 - Kryo (thread-local instance)
 - Hessian
 - Protostuff
@@ -101,12 +96,10 @@ The consumer calls RPC services via a dynamic proxy:
 - Send request via `RpcClient`
 - Block on the returned `Future` (or integrate async downstream if needed)
 
-Resiliency is annotation-driven:
+Resiliency is annotation-based:
 - `@Retry`: retry on configured exception type, with max attempts & delay
 - `@Limit`: rate limiting (token-bucket style via RateLimiter)
 - `@Breaker`: circuit breaker with states CLOSED / OPEN / HALF_OPEN, failure threshold, half-open success rate, and window time
-
-These are applied around method invocation so you can configure behavior per RPC method.
 
 ---
 
