@@ -34,6 +34,7 @@ The protocol is encoded into a single message container `RpcMsg` and supports:
 The Netty decoder extends `LengthFieldBasedFrameDecoder` and then parses fields in order (magic → version → length → msgType → serializer → compress → reqId → data).  
 
 The Netty encoder writes magic/version, reserves 4 bytes for length, and backfills message length after writing the payload.
+
 ---
 
 ### 2) Transport Layer: Netty Client/Server + Channel Reuse + Heartbeat
